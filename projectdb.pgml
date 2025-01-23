@@ -1,0 +1,40 @@
+<project>
+    <documents></documents>
+    <dmdesigns>
+        <dmdesign active>
+            <dmdesignskill skill="bs5.colors" harmony="">
+                <dmcolor key="primary" color="#dd8601"/>
+                <dmcolor key="secondary" color="rgb(95,26,5)"/>
+                <dmcolor key="info" color="rgb(232,191,128)"/>
+                <dmcolor key="success" color="#00dc16"/>
+                <dmcolor key="warning" color="#ffc107"/>
+                <dmcolor key="danger" color="#ff2c2c"/>
+                <dmcolor key="white" color="white"/>
+                <dmcolor key="light" color="#f8f9fa"/>
+                <dmcolor key="dark" color="#2c2c2c"/>
+            </dmdesignskill>
+            <dmdesignskill skill="fonts" text_weight="" text_color="$light" text_spacing="" text_effect="" text_italic="" text_smallcaps="" text_uppercase="" headings_weight="" headings_color="$white" headings_spacing="" headings_effect="" headings_italic="" headings_smallcaps="" headings_uppercase="" text_family="Rajdhani" headings_family="Jost" lead_color="$white"></dmdesignskill>
+            <dmdesignskill skill="headings"></dmdesignskill>
+            <dmdesignskill skill="background" image_for_colors keyword="car road" selector image color="$dark" filter_blur="0" filter_brightness="100" source="unsplash"></dmdesignskill>
+            <dmdesignskill skill="bootstrap" gradients responsive_fonts="" roundness="1" buttonRoundness="1" shadows="0" contrast="1" sizer="-3"></dmdesignskill>
+        </dmdesign>
+        <dmdesign>
+            <dmdesignskill skill="bs5.colors" harmony="">
+                <dmcolor key="primary" color="rgb(238,139,26)"/>
+                <dmcolor key="secondary" color="rgb(95,26,5)"/>
+                <dmcolor key="info" color="rgb(232,191,128)"/>
+                <dmcolor key="success" color="#198754"/>
+                <dmcolor key="warning" color="#ffc107"/>
+                <dmcolor key="danger" color="#dc3545"/>
+                <dmcolor key="white" color="white"/>
+                <dmcolor key="light" color="#f8f9fa"/>
+                <dmcolor key="dark" color="#212529"/>
+            </dmdesignskill>
+            <dmdesignskill skill="fonts" text_weight="" text_color="" text_spacing="" text_effect="" text_italic="" text_smallcaps="" text_uppercase="" headings_weight="" headings_color="" headings_spacing="" headings_effect="" headings_italic="" headings_smallcaps="" headings_uppercase="" text_family="Rajdhani" headings_family="Jost"></dmdesignskill>
+            <dmdesignskill skill="headings"></dmdesignskill>
+            <dmdesignskill skill="background" image_for_colors keyword="car road" selector=".poster" image></dmdesignskill>
+            <dmdesignskill skill="bootstrap" gradients responsive_fonts="" roundness="1" buttonRoundness="1" shadows="0" contrast="1" sizer="-3"></dmdesignskill>
+        </dmdesign>
+    </dmdesigns>
+    <dmlocked bs5-colors-primary="false" bs5-colors-secondary="false" bs5-colors-info="false" bs5-colors-success="true" bs5-colors-warning="true" bs5-colors-danger="true" bs5-colors-white="true" bs5-colors-light="true" bs5-colors-dark="true" fonts-text_family="false" fonts-headings_family="false" bs5-colors-button-from_image="true" headings-h1_family="true" bootstrap-buttonRoundness="true" bootstrap-shadows="true" bootstrap-roundness="true" bootstrap-gradients="true" background-image="false" background-color="false" bootstrap-sizer="true"></dmlocked>
+</project>
