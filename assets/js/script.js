@@ -23,6 +23,7 @@ const top5TokenText = document.getElementById("top-5-text");
 const btcPriceId = document.getElementById("btc-price-id");
 const btcDomId = document.getElementById("btc-dom-id");
 let top5TokenList = [];
+let hypeTokenList = [];
 
 // TODO FUNGSI TAMPIL ANIMASI LOADING
 function showLoading({ isLoading }) {
@@ -231,8 +232,8 @@ function initializeTable(sheetTitle, { firstLoad }) {
                 if (index === 0) {
                     // Kolom pertama 0 atau header pertama
                     let tokenCol = `<strong>${data}</strong>`;
-                    // Color top 5 token
-                    top5TokenList.map((item) => {
+                    //* Color top 5 token
+                    hypeTokenList.map((item) => {
                         if (item.token === data) {
                             tokenCol = `<strong class="warning">${data}</strong>`;
                         }
@@ -432,7 +433,7 @@ function initializeTable(sheetTitle, { firstLoad }) {
             emptyTable: "No more data",
             search: "Search :",
             // lengthMenu: "Tampilkan _MENU_ data",
-            info: "_START_ - _END_ dari _TOTAL_",
+            info: "_START_ - _END_ from _TOTAL_",
         },
     });
 }
@@ -828,7 +829,7 @@ function getHypeTokens(data) {
 
     // Kumpulkan semua nilai turnover dan market cap change
     for (let i = 0; i < data.length; i++) {
-        const turnover = parseFloat(data[i][12]);
+        // const turnover = parseFloat(data[i][12]);
         const marketCapChange = parseFloat(data[i][4]);
         const hypeActivity = parseFloat(data[i][13]);
 
@@ -869,6 +870,9 @@ function getHypeTokens(data) {
     // Ambil 5 token hype
     const top5Tokens = filteredTokens.slice(0, 5);
     top5TokenList = top5Tokens;
+
+    // Hype Token
+    hypeTokenList = filteredTokens;
 
     top5TokenText.textContent = `Top ${top5TokenList.length} Hype ${dropdownButtonMcap.textContent} Tokens`;
 

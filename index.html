@@ -1,63 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <meta charset="utf-8"/>
-        <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
-        <meta name="description" content=""/>
-        <meta name="author" content=""/>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, shrink-to-fit=no"
+        />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
         <!-- Bootstrap core CSS -->
-        <link href="bootstrap_theme/bootstrap.css" rel="stylesheet" type="text/css"/>
+        <link
+            href="bootstrap_theme/bootstrap.css"
+            rel="stylesheet"
+            type="text/css"
+        />
         <!-- Custom styles for this template -->
-        <link rel="stylesheet" href="blocks.css"/>
-        <link href="style.css" rel="stylesheet"/>
-        <link rel="stylesheet" href="assets/datatables/css/dataTables.dataTables.css"/>
-        <link rel="stylesheet" href="assets/datatables/css/responsive.dataTables.css"/>
-        <link rel="stylesheet" href="assets/datatables/css/fixedHeader.dataTables.css"/>
+        <link rel="stylesheet" href="blocks.css" />
+        <link href="style.css" rel="stylesheet" />
+        <link
+            rel="stylesheet"
+            href="assets/datatables/css/dataTables.dataTables.css"
+        />
+        <link
+            rel="stylesheet"
+            href="assets/datatables/css/responsive.dataTables.css"
+        />
+        <link
+            rel="stylesheet"
+            href="assets/datatables/css/fixedHeader.dataTables.css"
+        />
         <!-- -------------------------------- -->
         <title>Elephant Screener</title>
-        <link rel="icon" href="assets/raynor-logo-icon-colored.png" type="image/png"/>
+        <link
+            rel="icon"
+            href="assets/raynor-logo-icon-colored.png"
+            type="image/png"
+        />
     </head>
     <body class="text-white">
         <header>
-            <nav class="bg-dark bg-gradient navbar navbar-dark navbar-expand-lg shadow-none">
-                <div class="container"><a class="align-items-center d-inline-flex fw-bold h4 mb-0 navbar-brand text-primary text-uppercase" href="#"> <img width="30" height="30" class="me-1" src="assets/raynor-logo-icon-colored.png"/><span class="fs-6 fw-semibold">Elephant Screener</span></a>
-                    <button class="navbar-toggler rounded" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span>
+            <nav
+                class="bg-dark bg-gradient navbar navbar-dark navbar-expand-lg shadow-none"
+            >
+                <div class="container">
+                    <a
+                        class="align-items-center d-inline-flex fw-bold h4 mb-0 navbar-brand text-primary text-uppercase"
+                        href="#"
+                    >
+                        <img
+                            width="30"
+                            height="30"
+                            class="me-1"
+                            src="assets/raynor-logo-icon-colored.png"
+                        /><span class="fs-6 fw-semibold"
+                            >Elephant Screener</span
+                        ></a
+                    >
+                    <button
+                        class="navbar-toggler rounded"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#navbarNavDropdown"
+                        aria-controls="navbarNavDropdown"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation"
+                    >
+                        <span class="navbar-toggler-icon"></span>
                     </button>
-                    <div class="collapse flex-grow-1 flex-lg-grow-1 flex-xl-grow-0 navbar-collapse" id="navbarNavDropdown">
+                    <div
+                        class="collapse flex-grow-1 flex-lg-grow-1 flex-xl-grow-0 navbar-collapse"
+                        id="navbarNavDropdown"
+                    >
                         <ul class="me-auto navbar-nav">
-                            <li class="nav-item"><a class="nav-link p-lg-3" href="#" onclick="changeData('Sector'); closeNav()">Sector</a>
+                            <li class="nav-item">
+                                <a
+                                    class="nav-link p-lg-3"
+                                    href="#"
+                                    onclick="changeData('Sector'); closeNav()"
+                                    >Sector</a
+                                >
                             </li>
-                            <li class="nav-item"><a class="nav-link p-lg-3" href="#" onclick="changeData('Token Valuation'); closeNav()">Token Valuation</a>
+                            <li class="nav-item">
+                                <a
+                                    class="nav-link p-lg-3"
+                                    href="#"
+                                    onclick="changeData('Token Valuation'); closeNav()"
+                                    >Token Valuation</a
+                                >
                             </li>
-                            <li class="nav-item"><a class="nav-link p-lg-3" href="#" onclick="changeData('Global Dominance'); closeNav()">Global Dominance</a>
+                            <li class="nav-item">
+                                <a
+                                    class="nav-link p-lg-3"
+                                    href="#"
+                                    onclick="changeData('Global Dominance'); closeNav()"
+                                    >Global Dominance</a
+                                >
                             </li>
-                            <li class="nav-item"><a class="nav-link p-lg-3" href="#" onclick="changeData('Growth Degrowth'); closeNav()">Growth Degrowth</a>
+                            <li class="nav-item">
+                                <a
+                                    class="nav-link p-lg-3"
+                                    href="#"
+                                    onclick="changeData('Growth Degrowth'); closeNav()"
+                                    >Growth Degrowth</a
+                                >
                             </li>
-                            <div class="d-inline-flex d-lg-inline-flex d-md-inline-flex d-sm-inline-flex d-xl-inline-flex justify-content-center justify-content-lg-end justify-content-md-center justify-content-sm-center justify-content-xl-end mb-1 mb-md-1 mb-sm-1 mt-1 mt-md-1 mt-sm-1"><a href="https://elephans-organization.gitbook.io/elephant-agent" target="_blank" rel="noopener noreferrer" aria-label="website" class="align-self-center btn btn-outline-primary btn-sm lh-1 mx-1 p-2 rounded-circle"><svg fill="currentColor" width="20px" height="20px" viewBox="0 0 512 512" id="_x30_1" version="1.1" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" stroke="#ee8b1a">
-                                        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                            <div
+                                class="d-inline-flex d-lg-inline-flex d-md-inline-flex d-sm-inline-flex d-xl-inline-flex justify-content-center justify-content-lg-end justify-content-md-center justify-content-sm-center justify-content-xl-end mb-1 mb-md-1 mb-sm-1 mt-1 mt-md-1 mt-sm-1"
+                            >
+                                <a
+                                    href="https://elephans-organization.gitbook.io/elephant-agent"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label="website"
+                                    class="align-self-center btn btn-outline-primary btn-sm lh-1 mx-1 p-2 rounded-circle"
+                                    ><svg
+                                        fill="currentColor"
+                                        width="20px"
+                                        height="20px"
+                                        viewBox="0 0 512 512"
+                                        id="_x30_1"
+                                        version="1.1"
+                                        xml:space="preserve"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        xmlns:xlink="http://www.w3.org/1999/xlink"
+                                        stroke="#ee8b1a"
+                                    >
+                                        <g
+                                            id="SVGRepo_bgCarrier"
+                                            stroke-width="0"
+                                        ></g>
+                                        <g
+                                            id="SVGRepo_tracerCarrier"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        ></g>
                                         <g id="SVGRepo_iconCarrier">
-                                            <path d="M256,0C114.615,0,0,114.615,0,256s114.615,256,256,256s256-114.615,256-256S397.385,0,256,0z M418.275,146h-46.667 c-5.365-22.513-12.324-43.213-20.587-61.514c15.786,8.776,30.449,19.797,43.572,32.921C403.463,126.277,411.367,135.854,418.275,146 z M452,256c0,17.108-2.191,33.877-6.414,50h-64.034c1.601-16.172,2.448-32.887,2.448-50s-0.847-33.828-2.448-50h64.034 C449.809,222.123,452,238.892,452,256z M256,452c-5.2,0-21.048-10.221-36.844-41.813c-6.543-13.087-12.158-27.994-16.752-44.187 h107.191c-4.594,16.192-10.208,31.1-16.752,44.187C277.048,441.779,261.2,452,256,452z M190.813,306 c-1.847-16.247-2.813-33.029-2.813-50s0.966-33.753,2.813-50h130.374c1.847,16.247,2.813,33.029,2.813,50s-0.966,33.753-2.813,50 H190.813z M60,256c0-17.108,2.191-33.877,6.414-50h64.034c-1.601,16.172-2.448,32.887-2.448,50s0.847,33.828,2.448,50H66.414 C62.191,289.877,60,273.108,60,256z M256,60c5.2,0,21.048,10.221,36.844,41.813c6.543,13.087,12.158,27.994,16.752,44.187H202.404 c4.594-16.192,10.208-31.1,16.752-44.187C234.952,70.221,250.8,60,256,60z M160.979,84.486c-8.264,18.301-15.222,39-20.587,61.514 H93.725c6.909-10.146,14.812-19.723,23.682-28.593C130.531,104.283,145.193,93.262,160.979,84.486z M93.725,366h46.667 c5.365,22.513,12.324,43.213,20.587,61.514c-15.786-8.776-30.449-19.797-43.572-32.921C108.537,385.723,100.633,376.146,93.725,366z M351.021,427.514c8.264-18.301,15.222-39,20.587-61.514h46.667c-6.909,10.146-14.812,19.723-23.682,28.593 C381.469,407.717,366.807,418.738,351.021,427.514z"></path>
-                                        </g>
-                                    </svg></a>
-                                <a href="#" target="_blank" rel="noopener noreferrer" aria-label="telegram" class="align-self-center btn btn-outline-primary btn-sm lh-1 mx-1 p-2 rounded-circle"><svg fill="currentColor" width="20px" height="20px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                                        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                            <path
+                                                d="M256,0C114.615,0,0,114.615,0,256s114.615,256,256,256s256-114.615,256-256S397.385,0,256,0z M418.275,146h-46.667 c-5.365-22.513-12.324-43.213-20.587-61.514c15.786,8.776,30.449,19.797,43.572,32.921C403.463,126.277,411.367,135.854,418.275,146 z M452,256c0,17.108-2.191,33.877-6.414,50h-64.034c1.601-16.172,2.448-32.887,2.448-50s-0.847-33.828-2.448-50h64.034 C449.809,222.123,452,238.892,452,256z M256,452c-5.2,0-21.048-10.221-36.844-41.813c-6.543-13.087-12.158-27.994-16.752-44.187 h107.191c-4.594,16.192-10.208,31.1-16.752,44.187C277.048,441.779,261.2,452,256,452z M190.813,306 c-1.847-16.247-2.813-33.029-2.813-50s0.966-33.753,2.813-50h130.374c1.847,16.247,2.813,33.029,2.813,50s-0.966,33.753-2.813,50 H190.813z M60,256c0-17.108,2.191-33.877,6.414-50h64.034c-1.601,16.172-2.448,32.887-2.448,50s0.847,33.828,2.448,50H66.414 C62.191,289.877,60,273.108,60,256z M256,60c5.2,0,21.048,10.221,36.844,41.813c6.543,13.087,12.158,27.994,16.752,44.187H202.404 c4.594-16.192,10.208-31.1,16.752-44.187C234.952,70.221,250.8,60,256,60z M160.979,84.486c-8.264,18.301-15.222,39-20.587,61.514 H93.725c6.909-10.146,14.812-19.723,23.682-28.593C130.531,104.283,145.193,93.262,160.979,84.486z M93.725,366h46.667 c5.365,22.513,12.324,43.213,20.587,61.514c-15.786-8.776-30.449-19.797-43.572-32.921C108.537,385.723,100.633,376.146,93.725,366z M351.021,427.514c8.264-18.301,15.222-39,20.587-61.514h46.667c-6.909,10.146-14.812,19.723-23.682,28.593 C381.469,407.717,366.807,418.738,351.021,427.514z"
+                                            ></path>
+                                        </g></svg
+                                ></a>
+                                <a
+                                    href="https://t.me/elephant_agent_bot"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label="telegram"
+                                    class="align-self-center btn btn-outline-primary btn-sm lh-1 mx-1 p-2 rounded-circle"
+                                    ><svg
+                                        fill="currentColor"
+                                        width="20px"
+                                        height="20px"
+                                        viewBox="0 0 24 24"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <g
+                                            id="SVGRepo_bgCarrier"
+                                            stroke-width="0"
+                                        ></g>
+                                        <g
+                                            id="SVGRepo_tracerCarrier"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        ></g>
                                         <g id="SVGRepo_iconCarrier">
-                                            <path d="m20.665 3.717-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.303.953-.14.579.192l-8.533 7.701h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.785l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"></path>
-                                        </g>
-                                    </svg></a><a href="https://x.com/Elephant_Agent" target="_blank" rel="noopener noreferrer" aria-label="twitter" class="align-self-center btn btn-outline-primary btn-sm lh-1 mx-1 p-2 rounded-circle"> <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                                        <path d="M22.162 5.656a8.384 8.384 0 0 1-2.402.658A4.196 4.196 0 0 0 21.6 4c-.82.488-1.719.83-2.656 1.015a4.182 4.182 0 0 0-7.126 3.814 11.874 11.874 0 0 1-8.62-4.37 4.168 4.168 0 0 0-.566 2.103c0 1.45.738 2.731 1.86 3.481a4.168 4.168 0 0 1-1.894-.523v.052a4.185 4.185 0 0 0 3.355 4.101 4.21 4.21 0 0 1-1.89.072A4.185 4.185 0 0 0 7.97 16.65a8.394 8.394 0 0 1-6.191 1.732 11.83 11.83 0 0 0 6.41 1.88c7.693 0 11.9-6.373 11.9-11.9 0-.18-.005-.362-.013-.54a8.496 8.496 0 0 0 2.087-2.165z"/>
-                                    </svg> </a>
+                                            <path
+                                                d="m20.665 3.717-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.303.953-.14.579.192l-8.533 7.701h-.002l.002.001-.314 4.692c.46 0 .663-.211.921-.46l2.211-2.15 4.599 3.397c.848.467 1.457.227 1.668-.785l3.019-14.228c.309-1.239-.473-1.8-1.282-1.434z"
+                                            ></path>
+                                        </g></svg></a
+                                ><a
+                                    href="https://x.com/Elephant_Agent"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label="twitter"
+                                    class="align-self-center btn btn-outline-primary btn-sm lh-1 mx-1 p-2 rounded-circle"
+                                >
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="currentColor"
+                                        width="20"
+                                        height="20"
+                                    >
+                                        <path
+                                            d="M22.162 5.656a8.384 8.384 0 0 1-2.402.658A4.196 4.196 0 0 0 21.6 4c-.82.488-1.719.83-2.656 1.015a4.182 4.182 0 0 0-7.126 3.814 11.874 11.874 0 0 1-8.62-4.37 4.168 4.168 0 0 0-.566 2.103c0 1.45.738 2.731 1.86 3.481a4.168 4.168 0 0 1-1.894-.523v.052a4.185 4.185 0 0 0 3.355 4.101 4.21 4.21 0 0 1-1.89.072A4.185 4.185 0 0 0 7.97 16.65a8.394 8.394 0 0 1-6.191 1.732 11.83 11.83 0 0 0 6.41 1.88c7.693 0 11.9-6.373 11.9-11.9 0-.18-.005-.362-.013-.54a8.496 8.496 0 0 0 2.087-2.165z"
+                                        />
+                                    </svg>
+                                </a>
                             </div>
                             <section id="section-header-elephant">
                                 <div class="container">
-                                    <div class="background-center-center background-cover d-lg-none mb-3 mb-md-3 mb-sm-3 me-0 ms-0 mt-3 mt-md-3 mt-sm-3 opacity-85 pt-md-2 rounded rounded-3" style="
+                                    <div
+                                        class="background-center-center background-cover d-lg-none mb-3 mb-md-3 mb-sm-3 me-0 ms-0 mt-3 mt-md-3 mt-sm-3 opacity-85 pt-md-2 rounded rounded-3"
+                                        style="
                                             background-image: url('assets/raynor-bg.jpg');
                                             background-size: cover;
                                             min-height: 60px;
-                                        "></div>
+                                        "
+                                    ></div>
                                 </div>
                             </section>
                         </ul>
@@ -76,64 +215,112 @@
         <main id="data-body">
             <section id="section-global-info">
                 <div class="container w-100">
-                    <div class="bg-light bg-opacity-10 d-flex d-lg-flex d-md-flex d-sm-flex flex-md-row justify-content-around justify-content-lg-evenly justify-content-md-evenly justify-content-sm-evenly mb-2 mb-lg-1 mb-md-1 mb-sm-1 mt-2 mt-lg-2 mt-md-2 mt-sm-2 p-2 pb-lg-3 pb-md-3 pb-sm-2 pe-lg-4 pe-sm-3 ps-lg-4 ps-sm-3 pt-lg-3 pt-md-3 pt-sm-2 rounded rounded-3 text-white">
+                    <div
+                        class="bg-light bg-opacity-10 d-flex d-lg-flex d-md-flex d-sm-flex flex-md-row justify-content-around justify-content-lg-evenly justify-content-md-evenly justify-content-sm-evenly mb-2 mb-lg-1 mb-md-1 mb-sm-1 mt-2 mt-lg-2 mt-md-2 mt-sm-2 p-2 pb-lg-3 pb-md-3 pb-sm-2 pe-lg-4 pe-sm-3 ps-lg-4 ps-sm-3 pt-lg-3 pt-md-3 pt-sm-2 rounded rounded-3 text-white"
+                    >
                         <div class="align-items-center d-flex w-auto">
                             <p class="mb-0">BTC.D</p>
-                            <p class="fs-5 fw-semibold mb-0 ps-2 ps-lg-2 ps-md-2 ps-sm-2 text-success" id="btc-dom-id">
-                                54.08 % </p>
+                            <p
+                                class="fs-5 fw-semibold mb-0 ps-2 ps-lg-2 ps-md-2 ps-sm-2 text-success"
+                                id="btc-dom-id"
+                            >
+                                54.08 %
+                            </p>
                         </div>
                         <div class="align-items-center d-flex w-auto">
                             <p class="mb-0">BTC PRICE</p>
-                            <p class="fs-5 fw-semibold mb-0 ps-2 ps-lg-2 ps-md-2 ps-sm-2 text-primary" id="btc-price-id">
-                                $100.000,00 </p>
+                            <p
+                                class="fs-5 fw-semibold mb-0 ps-2 ps-lg-2 ps-md-2 ps-sm-2 text-primary"
+                                id="btc-price-id"
+                            >
+                                $100.000,00
+                            </p>
                         </div>
                     </div>
                 </div>
             </section>
             <section id="section-perform">
                 <div class="container w-100">
-                    <div class="align-items-lg-center align-items-md-center align-items-sm-start align-items-start bg-light bg-opacity-10 d-flex d-lg-flex d-md-flex d-sm-flex flex-column flex-lg-column flex-md-column justify-content-lg-between justify-content-sm-evenly justify-content-start p-2 p-lg-3 p-md-3 p-sm-2 rounded rounded-3 text-white">
+                    <div
+                        class="align-items-lg-center align-items-md-center align-items-sm-start align-items-start bg-light bg-opacity-10 d-flex d-lg-flex d-md-flex d-sm-flex flex-column flex-lg-column flex-md-column justify-content-lg-between justify-content-sm-evenly justify-content-start p-2 p-lg-3 p-md-3 p-sm-2 rounded rounded-3 text-white"
+                    >
                         <p class="mb-0" id="top-5-text">Top 5 Hype Token</p>
                         <h6 class="fs-6 text-warning text-wrap" id="top-5-id">
-                            Top 3 Token </h6>
+                            Top 3 Token
+                        </h6>
                     </div>
                 </div>
             </section>
             <section id="section-pagetitle">
-                <div class="container mt-lg-3 pb-1 pb-lg-1 pb-md-1 pb-sm-1 pt-3 pt-md-3 pt-sm-3 w-100">
+                <div
+                    class="container mt-lg-3 pb-1 pb-lg-1 pb-md-1 pb-sm-1 pt-3 pt-md-3 pt-sm-3 w-100"
+                >
                     <div class="align-items-center row">
                         <div class="col">
-                            <hr class="border-white mb-0 mt-0"/>
+                            <hr class="border-white mb-0 mt-0" />
                         </div>
                         <div class="col-auto">
-                            <h5 class="fs-5 fw-semibold mb-0 text-uppercase" id="page-title-id">
-                                Sector </h5>
+                            <h5
+                                class="fs-5 fw-semibold mb-0 text-uppercase"
+                                id="page-title-id"
+                            >
+                                Sector
+                            </h5>
                         </div>
                         <div class="col">
-                            <hr class="border-white mb-0 mt-0"/>
+                            <hr class="border-white mb-0 mt-0" />
                         </div>
                     </div>
                 </div>
             </section>
             <section id="section-filter">
-                <div class="container d-md-flex justify-content-md-center pb-3 pb-md-3 pb-sm-3 pt-3 pt-md-3 pt-sm-3 w-100">
-                    <div class="col-md-4 d-flex justify-content-evenly justify-content-md-between">
+                <div
+                    class="container d-md-flex justify-content-md-center pb-3 pb-md-3 pb-sm-3 pt-3 pt-md-3 pt-sm-3 w-100"
+                >
+                    <div
+                        class="col-md-4 d-flex justify-content-evenly justify-content-md-between"
+                    >
                         <div class="pe-2">
                             <p class="mb-0 text-center">Market Cap</p>
                             <div class="dropdown">
-                                <button class="bg-opacity-10 bg-white border btn dropdown-toggle rounded rounded-2 shadow-none text-white" id="mcap-dropdown-id" data-bs-toggle="dropdown" aria-expanded="false" type="button">
+                                <button
+                                    class="bg-opacity-10 bg-white border btn dropdown-toggle rounded rounded-2 shadow-none text-white"
+                                    id="mcap-dropdown-id"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                    type="button"
+                                >
                                     All Market Cap
-</button>
-                                <ul class="bg-gradient dropdown-menu" aria-labelledby="dropdownMenuMcap" id="mcapDropdown">
-                                    <li><a class="dropdown-item" href="#">All Market Cap</a>
+                                </button>
+                                <ul
+                                    class="bg-gradient dropdown-menu"
+                                    aria-labelledby="dropdownMenuMcap"
+                                    id="mcapDropdown"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                            >All Market Cap</a
+                                        >
                                     </li>
-                                    <li><a class="dropdown-item" href="#">Large Cap</a>
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                            >Large Cap</a
+                                        >
                                     </li>
-                                    <li><a class="dropdown-item" href="#">Mid Cap</a>
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                            >Mid Cap</a
+                                        >
                                     </li>
-                                    <li><a class="dropdown-item" href="#">Small Cap</a>
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                            >Small Cap</a
+                                        >
                                     </li>
-                                    <li><a class="dropdown-item" href="#">Micro Cap</a>
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                            >Micro Cap</a
+                                        >
                                     </li>
                                 </ul>
                             </div>
@@ -141,24 +328,56 @@
                         <div class="pe-2">
                             <p class="mb-0 text-center">Sorting</p>
                             <div class="dropdown">
-                                <button class="bg-opacity-10 bg-white border btn dropdown-toggle rounded rounded-2 shadow-none text-white" type="button" id="sorting-dropdown-id" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button
+                                    class="bg-opacity-10 bg-white border btn dropdown-toggle rounded rounded-2 shadow-none text-white"
+                                    type="button"
+                                    id="sorting-dropdown-id"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                >
                                     Total Volume
-</button>
-                                <ul class="bg-gradient dropdown-menu" aria-labelledby="dropdownMenuSorting" id="sortingDropdown">
-                                    <li><a class="dropdown-item" href="#">Total Volume</a>
+                                </button>
+                                <ul
+                                    class="bg-gradient dropdown-menu"
+                                    aria-labelledby="dropdownMenuSorting"
+                                    id="sortingDropdown"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                            >Total Volume</a
+                                        >
                                     </li>
-                                    <li><a class="dropdown-item" href="#">Market Cap</a>
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                            >Market Cap</a
+                                        >
                                     </li>
-                                    <li><a class="dropdown-item" href="#">Market Cap Change</a>
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                            >Market Cap Change</a
+                                        >
                                     </li>
-                                    <li><a class="dropdown-item" href="#">Hype Activity</a>
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                            >Hype Activity</a
+                                        >
                                     </li>
                                 </ul>
                             </div>
                         </div>
-                        <div class="align-items-center d-flex flex-column-reverse justify-content-end text-center">
-                            <input type="checkbox" class="form-check-input" id="growth-mcap-id"/>
-                            <label class="form-check-label text-wrap" for="formInput32">Only Growth Mcap</label>
+                        <div
+                            class="align-items-center d-flex flex-column-reverse justify-content-end text-center"
+                        >
+                            <input
+                                type="checkbox"
+                                class="form-check-input"
+                                id="growth-mcap-id"
+                            />
+                            <label
+                                class="form-check-label text-wrap"
+                                for="formInput32"
+                                >Only Growth Mcap</label
+                            >
                         </div>
                     </div>
                 </div>
@@ -173,24 +392,33 @@
                     </table>
                 </div>
             </section>
-            <footer class="align-items-center d-flex flex-column-reverse flex-nowrap justify-content-between mb-4 mt-2 my-4 pb-3 py-3">
+            <footer
+                class="align-items-center d-flex flex-column-reverse flex-nowrap justify-content-between mb-4 mt-2 my-4 pb-3 py-3"
+            >
                 <p class="mb-0 text-muted">&copy; 2025 Elephant Agent</p>
                 <div class="container pb-4 pt-4 w-100">
                     <div class="align-items-center row">
                         <div class="col">
-                            <hr class="border-white mb-0 mt-0"/>
+                            <hr class="border-white mb-0 mt-0" />
                         </div>
                         <div class="col-auto">
-                            <div class="bg-primary p-2" style="transform: rotate(45deg)"></div>
+                            <div
+                                class="bg-primary p-2"
+                                style="transform: rotate(45deg)"
+                            ></div>
                         </div>
                         <div class="col">
-                            <hr class="border-white mb-0 mt-0"/>
+                            <hr class="border-white mb-0 mt-0" />
                         </div>
                     </div>
                 </div>
             </footer>
         </main>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+            crossorigin="anonymous"
+        ></script>
         <!-- <script src="assets/js/popper.min.js"></script> -->
         <!-- <script src="bootstrap/js/bootstrap.min.js"></script> -->
         <!-- <script src="pgia/lib/pgia.js"></script> -->
