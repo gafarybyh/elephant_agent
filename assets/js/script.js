@@ -1,6 +1,5 @@
 // API KEY dan Spreadsheet ID
 const SPREADSHEET_ID = "1PW67I8_1IFuvz5GBe-Gl8skCLzylRlOR8IWvv_mxCvI";
-// const API_KEY = "AIzaSyC7m0JB6Z-kJHeTipJbhKZRfulEYluZIVM";
 
 // Save to cache all fetching from API
 const cachedData = {};

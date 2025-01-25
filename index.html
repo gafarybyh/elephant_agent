@@ -438,6 +438,11 @@
                 }
             });
 
+            document.addEventListener("contextmenu", function(event) {
+            event.preventDefault(); // Mencegah menu klik kanan muncul
+            
+        });
+
             function closeNav() {
                 const nav = document.getElementById("navbarNavDropdown");
                 if (nav.classList.contains("show")) {
