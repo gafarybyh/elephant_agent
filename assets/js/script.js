@@ -823,44 +823,74 @@ function filteredTableRow({ data, sheetTitle }) {
 
 //TODO FUNGSI HYPE TOKEN
 function getHypeTokens(data) {
+    // *NOTE
+    // *Gunakan IQR untuk mendeteksi outlier.
+    // *Gunakan Percentile (90th atau 95th) untuk mengidentifikasi token dengan perubahan besar.
+    // *Gunakan Z-Score jika Anda yakin data memiliki distribusi mendekati normal.
     let marketCapChanges = [];
     let hypeActivityValues = [];
+    let positiveMcapChanges = [];
 
-    // Kumpulkan semua nilai turnover dan market cap change
+    //* Kumpulkan semua nilai turnover dan market cap change
     for (let i = 0; i < data.length; i++) {
         // const turnover = parseFloat(data[i][12]);
         const marketCapChange = parseFloat(data[i][4]);
         const hypeActivity = parseFloat(data[i][13]);
 
+        if (!isNaN(hypeActivity)) hypeActivityValues.push(hypeActivity);
         if (!isNaN(marketCapChange)) marketCapChanges.push(marketCapChange);
-        if (!isNaN(marketCapChange)) hypeActivityValues.push(hypeActivity);
+        if (!isNaN(marketCapChange) && marketCapChange > 0) {
+            positiveMcapChanges.push(marketCapChange);
+        }
     }
 
-    // Hitung median atau rata-rata
+    //* Hitung median atau rata-rata
     const marketCapChangeThreshold = calculateMedian(marketCapChanges);
+    const positiveMcapChangeThreshold = calculateMedian(positiveMcapChanges);
     let hypeActivityThreshold = limitMedianActToken;
+
+    const iqrMcapChange = calculateOutlier(marketCapChanges);
+    const outlierHypeToken = calculateOutlier(hypeActivityValues);
+
+    // console.log(outlierHypeToken.upperBound);
 
     let filteredTokens = [];
 
-    // Filter data berdasarkan threshold
+    //* Filter data berdasarkan threshold
     for (let i = 0; i < data.length; i++) {
         const token = data[i][0];
         const marketCapChange = parseFloat(data[i][4]);
         const turnover = parseFloat(data[i][12]);
         const hypeActivity = parseFloat(data[i][13]);
 
-        if (
-            marketCapChange > marketCapChangeThreshold &&
-            marketCapChange > 0 &&
-            hypeActivity > hypeActivityThreshold
-        ) {
-            filteredTokens.push({
-                token: token,
-                marketCapChange: marketCapChange,
-                turnover: turnover,
-                hypeActivity: hypeActivity,
-            });
-        }
+        //* Outlier detection mcap
+        iqrMcapChange.outliers.map((outlierMcap) => {
+            if (
+                marketCapChange === outlierMcap &&
+                marketCapChange > 0 &&
+                hypeActivity > outlierHypeToken.upperBound
+            ) {
+                filteredTokens.push({
+                    token: token,
+                    marketCapChange: marketCapChange,
+                    turnover: turnover,
+                    hypeActivity: hypeActivity,
+                });
+            }
+        });
+
+        // if (
+        //     marketCapChange > positiveMcapChangeThreshold &&
+        //     marketCapChange > 0 &&
+        //     hypeActivity > hypeActivityThreshold
+        // ) {
+        //     filteredTokens.push({
+        //         token: token,
+        //         marketCapChange: marketCapChange,
+        //         turnover: turnover,
+        //         hypeActivity: hypeActivity,
+        //     });
+        // }
     }
 
     // Urutkan berdasarkan Hype Activity (descending)
@@ -897,11 +927,118 @@ function calculateMedian(arr) {
 }
 
 // =====================================================
-// TODO FUNGSI KALKULASI  AVERAGE/MEAN
+// TODO FUNGSI KALKULASI AVERAGE/MEAN
 function calculateAverage(arr) {
     const sum = arr.reduce((a, b) => a + b, 0);
     return sum / arr.length;
 }
 
-// Fetch data on page load
+//TODO FUNGSI IQR OUTLIER DETECTION
+function calculateOutlier(data) {
+    // Urutkan data
+    data.sort((a, b) => a - b);
+
+    // IQR Calculation
+    function getQuartile(data, quartile) {
+        const pos = (data.length - 1) * quartile;
+        const base = Math.floor(pos);
+        const rest = pos - base;
+        return data[base] + rest * (data[base + 1] - data[base]);
+    }
+
+    const Q1 = getQuartile(data, 0.25);
+    const Q3 = getQuartile(data, 0.75);
+    const IQR = Q3 - Q1;
+    const lowerBound = Q1 - 1.5 * IQR;
+    const upperBound = Q3 + 1.5 * IQR;
+
+    // Mean Calculation
+    const mean = data.reduce((sum, val) => sum + val, 0) / data.length;
+
+    // StdDev Calculation
+    const stdDev = Math.sqrt(
+        data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) /
+            data.length
+    );
+
+    // Z-Score Calculation
+    const zScores = data.map((x) => (x - mean) / stdDev);
+
+    // Percentile Calculation
+    function getPercentile(data, percentile) {
+        const index = Math.ceil(percentile * data.length) - 1;
+        return data[index];
+    }
+    const percentile90 = getPercentile(data, 0.9);
+
+    const outliers = data.filter((x) => x < lowerBound || x > upperBound);
+
+    const tokensAbovePercentile90 = data.filter((x) => x > percentile90);
+
+    // Output
+    return {
+        Q1,
+        Q3,
+        IQR,
+        lowerBound,
+        upperBound,
+        zScores,
+        percentile90,
+        tokensAbovePercentile90,
+        outliers,
+    };
+}
+
+//TODO! CATATAN LOG TRANSFORMATION
+
+// function filterTurnoverRatios(data) {
+//     // Step 1: Urutkan data
+//     data.sort((a, b) => a - b);
+
+//     // Step 2: IQR Calculation
+//     function getQuartile(data, quartile) {
+//         const pos = (data.length - 1) * quartile;
+//         const base = Math.floor(pos);
+//         const rest = pos - base;
+//         return data[base] + rest * (data[base + 1] - data[base]);
+//     }
+
+//     const Q1 = getQuartile(data, 0.25);
+//     const Q3 = getQuartile(data, 0.75);
+//     const IQR = Q3 - Q1;
+//     const upperBound = Q3 + 1.5 * IQR;
+
+//     // Step 3: Log Transformation
+//     const logRatios = data.map((x) => Math.log(x));
+//     const logMean =
+//         logRatios.reduce((sum, val) => sum + val, 0) / logRatios.length;
+//     const logStdDev = Math.sqrt(
+//         logRatios.reduce((sum, val) => sum + Math.pow(val - logMean, 2), 0) /
+//             logRatios.length
+//     );
+
+//     // Step 4: Percentile Calculation
+//     function getPercentile(data, percentile) {
+//         const index = Math.ceil(percentile * data.length) - 1;
+//         return data[index];
+//     }
+//     const percentile90 = getPercentile(data, 0.9);
+
+//     // Filter Data
+//     return {
+//         IQRFiltered: data.filter((x) => x <= upperBound),
+//         LogFiltered: data.filter((x) => Math.log(x) > logMean + 2 * logStdDev),
+//         PercentileFiltered: data.filter((x) => x > percentile90),
+//     };
+// }
+
+// // Contoh data turnover volume / circulating supply
+// const turnoverRatios = [0.01, 0.02, 0.03, 0.5, 0.7, 1.2, 10, 50, 100];
+// const filteredData = filterTurnoverRatios(turnoverRatios);
+
+// console.log("IQR Filtered:", filteredData.IQRFiltered);
+// console.log("Log Filtered:", filteredData.LogFiltered);
+// console.log("Percentile Filtered:", filteredData.PercentileFiltered);
+
+//TODO FETCH ALL DATA FIRST LOAD
 document.addEventListener("DOMContentLoaded", fetchAllData);
