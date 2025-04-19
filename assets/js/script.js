@@ -1,64 +1,188 @@
-// API KEY dan Spreadsheet ID
+/**
+ * Elephant Screener - Data Visualization Tool
+ *
+ * This script handles data fetching, processing, and visualization for cryptocurrency market data.
+ * It includes functions for filtering, sorting, and displaying data in tables with various metrics.
+ */
+
+//=============================================================================
+// CONFIGURATION AND GLOBAL VARIABLES
+//=============================================================================
+
+/** API Configuration */
 const SPREADSHEET_ID = "1PW67I8_1IFuvz5GBe-Gl8skCLzylRlOR8IWvv_mxCvI";
 
-// Save to cache all fetching from API
-const cachedData = {};
-let dataTable;
-let limitMedianActToken = 0;
-let limitMedianActSector = 0;
+/** Data Storage */
+const cachedData = {};        // Cache for API data
+let dataTable;               // DataTable instance
+let top5TokenList = [];      // List of top 5 tokens
+let hypeTokenList = [];      // List of all hype tokens
 
+/** Threshold Values */
+let limitMedianActToken = 0;  // Median activity threshold for tokens
+let limitMedianActSector = 0; // Median activity threshold for sectors
+
+/** DOM Elements - UI Controls */
 const marketCapDropdown = document.getElementById("mcapDropdown");
 const sortingDropdown = document.getElementById("sortingDropdown");
 const dropdownButtonMcap = document.getElementById("mcap-dropdown-id");
 const dropdownButtonSorting = document.getElementById("sorting-dropdown-id");
+const growthMcapCheck = document.getElementById("growth-mcap-id");
+
+/** DOM Elements - Display Areas */
 const currentPageTitle = document.getElementById("page-title-id");
 const tableHeaders = document.getElementById("table-headers");
 const tableRows = document.getElementById("table-rows");
 const dataBodyId = document.getElementById("data-body");
 const loadingId = document.getElementById("loadingAnimation");
-const growthMcapCheck = document.getElementById("growth-mcap-id");
 const top5TokenId = document.getElementById("top-5-id");
 const top5TokenText = document.getElementById("top-5-text");
 const btcPriceId = document.getElementById("btc-price-id");
 const btcDomId = document.getElementById("btc-dom-id");
-let top5TokenList = [];
-let hypeTokenList = [];
 
-// TODO FUNGSI TAMPIL ANIMASI LOADING
+//=============================================================================
+// UTILITY FUNCTIONS
+//=============================================================================
+
+/**
+ * Shows or hides the loading animation
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.isLoading - Whether to show loading animation
+ */
 function showLoading({ isLoading }) {
-    if (isLoading === true) {
-        dataBodyId.style.display = "none";
-        loadingId.style.display = "block";
-    } else {
-        dataBodyId.style.display = "block";
-        loadingId.style.display = "none";
-    }
+    dataBodyId.style.display = isLoading ? "none" : "block";
+    loadingId.style.display = isLoading ? "block" : "none";
 }
 
-// TODO MENGISI DATA KOSONG DENGAN "-" AGAR SESUAI DENGAN KOLOM HEADER
+/**
+ * Normalizes data rows to ensure consistent format
+ * @param {Array} headers - Array of header names
+ * @param {Array} rows - Array of data rows
+ * @returns {Array} - Normalized data rows
+ */
 function normalizeData(headers, rows) {
-    return rows.map((row) => {
-        const normalizedRow = row.map((value) => {
-            //* Cek apakah nilai adalah NaN atau kosong
-            if (value === "NaN" || value === null || value === undefined) {
-                return "-";
-            }
-            return value;
-        });
+    const headerLength = headers.length;
 
-        //* Add "-" jika panjang baris kurang dari jumlah header
-        while (normalizedRow.length < headers.length) {
-            normalizedRow.push("-");
+    return rows.map(row => {
+        // Normalize values in one pass
+        const normalizedRow = row.map(value =>
+            (value === "NaN" || value === null || value === undefined) ? "-" : value
+        );
+
+        // If row is shorter than headers, add missing values efficiently
+        if (normalizedRow.length < headerLength) {
+            return [...normalizedRow, ...Array(headerLength - normalizedRow.length).fill("-")];
         }
 
         return normalizedRow;
     });
 }
 
-// TODO FUNGSI FETCHING DATA DARI GOOGLE SHEET API
+/**
+ * Calculates the median value of an array
+ * @param {Array} arr - Array of numbers
+ * @returns {number} - Median value
+ */
+function calculateMedian(arr) {
+    // Handle edge cases
+    if (!arr || arr.length === 0) return 0;
+    if (arr.length === 1) return arr[0];
+
+    // Create a copy to avoid modifying the original array
+    const sortedArr = [...arr].sort((a, b) => a - b);
+    const n = sortedArr.length;
+
+    // Calculate median based on array length
+    if (n % 2 === 0) {
+        // Even length - average of middle elements
+        return (sortedArr[n / 2 - 1] + sortedArr[n / 2]) / 2;
+    } else {
+        // Odd length - middle element
+        return sortedArr[Math.floor(n / 2)];
+    }
+}
+
+/**
+ * Calculates the average value of an array
+ * @param {Array} arr - Array of numbers
+ * @returns {number} - Average value
+ */
+function calculateAverage(arr) {
+    // Handle empty array
+    if (!arr || arr.length === 0) return 0;
+
+    // Calculate average in one line
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+/**
+ * Detects outliers in a dataset using IQR method
+ * @param {Array} data - Array of numbers
+ * @returns {Object} - Object containing outlier information
+ */
+function calculateOutlier(data) {
+    // Handle empty data
+    if (!data || data.length === 0) {
+        return {
+            Q1: 0, Q3: 0, IQR: 0, lowerBound: 0, upperBound: 0,
+            percentile90: 0, outliers: []
+        };
+    }
+
+    // Create a sorted copy to avoid modifying original data
+    const sortedData = [...data].sort((a, b) => a - b);
+
+    // Helper function for quartile calculation with bounds checking
+    function getQuartile(data, quartile) {
+        const pos = (data.length - 1) * quartile;
+        const base = Math.floor(pos);
+        const rest = pos - base;
+
+        // Prevent out-of-bounds access
+        if (base + 1 < data.length) {
+            return data[base] + rest * (data[base + 1] - data[base]);
+        }
+        return data[base];
+    }
+
+    // Calculate quartiles and IQR
+    const Q1 = getQuartile(sortedData, 0.25);
+    const Q3 = getQuartile(sortedData, 0.75);
+    const IQR = Q3 - Q1;
+    const lowerBound = Q1 - 1.5 * IQR;
+    const upperBound = Q3 + 1.5 * IQR;
+
+    // Calculate percentile with bounds checking
+    const percentile90Index = Math.min(Math.ceil(0.9 * sortedData.length) - 1, sortedData.length - 1);
+    const percentile90 = sortedData[Math.max(0, percentile90Index)];
+
+    // Find outliers
+    const outliers = sortedData.filter(x => x < lowerBound || x > upperBound);
+
+    // Return only what's needed for better performance
+    return {
+        Q1,
+        Q3,
+        IQR,
+        lowerBound,
+        upperBound,
+        percentile90,
+        outliers
+    };
+}
+
+//=============================================================================
+// DATA FETCHING AND PROCESSING
+//=============================================================================
+
+/**
+ * Fetches all data from Google Sheets API
+ * Loads data for all sheets and initializes the first view
+ */
 async function fetchAllData() {
     showLoading({ isLoading: true });
 
+    // Define sheets to fetch
     const sheets = [
         { name: "Sector Category!A1:F", title: "Sector" },
         { name: "Tokens!A1:R", title: "Token Valuation" },
@@ -67,6 +191,7 @@ async function fetchAllData() {
     ];
 
     try {
+        // Fetch all sheets in parallel
         await Promise.all(
             sheets.map(async (sheet) => {
                 const url = `https://raynor-api.gafarybyh.workers.dev/sheets/${SPREADSHEET_ID}/${encodeURIComponent(
@@ -74,6 +199,7 @@ async function fetchAllData() {
                 )}`;
                 const response = await fetch(url);
                 const data = await response.json();
+
                 if (data.values) {
                     const headers = data.values[0];
                     const rows = normalizeData(headers, data.values.slice(1));
@@ -84,35 +210,45 @@ async function fetchAllData() {
             })
         );
 
-        // First value dropdown market cap
+        // Set initial UI state
         dropdownButtonMcap.textContent = "Large Cap";
 
-        cachedData["Token Valuation"].rows.map((col) => {
-            if (col[0] === "Bitcoin") {
-                const btcprice = parseFloat(col[1]);
-                btcPriceId.textContent = `${btcprice.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                    minimumFractionDigits: 0, // Tambahkan dua angka desimal
-                })}`;
-            }
-        });
+        // Find Bitcoin price and update display
+        const bitcoinData = cachedData["Token Valuation"].rows.find(row => row[0] === "Bitcoin");
+        if (bitcoinData) {
+            const btcprice = parseFloat(bitcoinData[1]);
+            btcPriceId.textContent = btcprice.toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
+                minimumFractionDigits: 0
+            });
+        }
 
+        // Update BTC dominance display
         const btcDom = parseFloat(cachedData["Global Dominance"].rows[0][2]);
         btcDomId.textContent = `${btcDom.toFixed(2)} %`;
 
         // Initialize table with first sheet
-        initializeTable("Sector", (firstLoad = true));
+        initializeTable("Sector", { firstLoad: true });
 
         showLoading({ isLoading: false });
     } catch (error) {
         console.error("Failed to fetch data:", error);
         alert("Failed to fetch data from API. Please try again later.");
+        showLoading({ isLoading: false });
     }
 }
-//=======================================================
 
-// TODO! KODE UTAMA INISIAL TABEL
+//=============================================================================
+// TABLE INITIALIZATION AND RENDERING
+//=============================================================================
+
+/**
+ * Initializes and renders the data table
+ * @param {string} sheetTitle - Title of the sheet to display
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.firstLoad - Whether this is the first load
+ */
 function initializeTable(sheetTitle, { firstLoad }) {
     const data = cachedData[sheetTitle];
 
@@ -121,86 +257,69 @@ function initializeTable(sheetTitle, { firstLoad }) {
         return;
     }
 
-    //* Clear table
+    // Clear existing table content
     tableHeaders.innerHTML = "";
     tableRows.innerHTML = "";
 
-    //* Set page title
+    // Update page title
     currentPageTitle.textContent = sheetTitle;
 
-    //* Jika dataTable sudah ada, hancurkan sebelum reinitializing
+    // Destroy existing DataTable instance if it exists
     if (dataTable) {
         dataTable.destroy();
         $("#data-table thead tr").empty();
         $("#data-table tbody").empty();
     }
 
-    // Populate header tabel
-    // data.headers.forEach((header) => {
-    //     const th = document.createElement("th");
-    //     th.textContent = header;
-    //     tableHeaders.appendChild(th);
-    // });
+    // Populate table headers
+    data.headers.forEach(header => {
+        const thElement = document.createElement("th");
+        thElement.textContent = header;
+        tableHeaders.appendChild(thElement);
+    });
 
-    //* Filter header berdasarkan kolom yang diatur
-    data.headers
-        .map((header) => {
-            const index = data.headers.indexOf(header);
-            if (index !== -1) {
-                const thElement = document.createElement("th");
-                thElement.textContent = header;
-                tableHeaders.appendChild(thElement);
-                return index; // Simpan indeks kolom
-            }
-            return -1;
-        })
-        .filter((index) => index !== -1);
-
-    //* Populate rows tabel
-    data.rows.forEach((row) => {
+    // Populate table rows
+    data.rows.forEach(row => {
         const tr = document.createElement("tr");
 
-        // Loop through each cell in the row
+        // Create cells for each value in the row
         for (let i = 0; i < data.headers.length; i++) {
             const td = document.createElement("td");
-            td.textContent =
-                row[i] !== null ||
-                row[i] !== undefined ||
-                row[i] !== "" ||
-                row[i] !== NaN
-                    ? row[i]
-                    : "-"; // Ganti undefined dengan "-"
-
+            td.textContent = (row[i] !== null && row[i] !== undefined && row[i] !== "" && !isNaN(row[i]))
+                ? row[i]
+                : "-";
             tr.appendChild(td);
         }
+
         tableRows.appendChild(tr);
     });
 
-    //* show dan hide dropdown market cap dan sorting
+    // Update UI based on selected sheet
     showHideDropdown(sheetTitle);
 
-    //* Kostum penampilan untuk baris tabel
+    // Get table layout configuration
     const currentTableTitle = currentPageTitle.textContent;
 
-    //* Remove the default layout table
-    DataTable.defaults.layout = {
-        topStart: null,
-        topEnd: null,
-        bottomStart: null,
-        bottomEnd: null,
-    };
+    // Configure DataTable defaults if available
+    if (typeof window.DataTable !== 'undefined') {
+        window.DataTable.defaults.layout = {
+            topStart: null,
+            topEnd: null,
+            bottomStart: null,
+            bottomEnd: null,
+        };
+    }
 
-    //* Initialize DataTables
+    // Initialize DataTable with configuration
     dataTable = $("#data-table").DataTable({
-        // dom: 'Bfrtip', // agar dapat kontrol layout table
         destroy: true,
         select: true,
         responsive: {
             details: {
-                type: "column", // Tampilkan ikon di kolom tertentu
-                target: "tr", // Baris menjadi interaktif
-                renderer: function (api, rowIdx, columns) {
-                    let data = $.map(columns, function (col, i) {
+                type: "column",
+                target: "tr",
+                renderer: function (_, __, columns) {
+                    let data = $.map(columns, function (col) {
                         return col.hidden
                             ? `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
                                 <td><strong>${col.title} :</strong></td>
@@ -222,202 +341,10 @@ function initializeTable(sheetTitle, { firstLoad }) {
         data: firstLoad
             ? data.rows
             : filteredTableRow({ data: data.rows, sheetTitle: sheetTitle }),
-        // data: data.rows,
         columnDefs: tableLayout(currentTableTitle).setColumnPriority,
         columns: data.headers.map((header, index) => ({
-            title: titleHeader(header), // Set text header sesuai dengan data
-            render: (data, type, row) => {
-                //* Format header pertama tabel
-                if (index === 0) {
-                    // Kolom pertama 0 atau header pertama
-                    let tokenCol = `<strong>${data}</strong>`;
-                    //* Color top 5 token
-                    hypeTokenList.map((item) => {
-                        if (item.token === data) {
-                            tokenCol = `<strong class="warning">${data}</strong>`;
-                        }
-                    });
-
-                    return tokenCol;
-                }
-
-                const numberValue = parseFloat(data);
-
-                //* Format header currency
-                if (
-                    header === "Price" ||
-                    header === "Total Volume" ||
-                    header === "Volume 24h" ||
-                    header === "Market Cap" ||
-                    header === "FDV" ||
-                    header === "BTC Price" ||
-                    header === "BTC Volume" ||
-                    header === "Global Marketcap" ||
-                    header === "Global Volume"
-                ) {
-                    // Pastikan data berupa angka dan formatkan ke dollar
-                    const formattedPrice = numberValue.toLocaleString("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                        minimumFractionDigits: 2, // Tambahkan dua angka desimal
-                    });
-                    return `<span>${formattedPrice}</span>`;
-                }
-
-                //* Format angka biasa
-                if (
-                    header === "Circulating Supply" ||
-                    header === "Total Supply"
-                ) {
-                    // Format angka dengan pemisah ribuan dan 2 angka desimal
-                    const formattedNum = numberValue.toLocaleString("en-US", {
-                        maximumFractionDigits: 0, // tanpa desimal
-                    });
-
-                    return `<span>${formattedNum}</span>`;
-                }
-
-                //* Format angka persen biasa
-                if (
-                    header === "Turnover (% Cirulating Supply Traded)" ||
-                    header === "BTC Dominance" ||
-                    header === "Turnover (% Cirulating Supply Traded)" ||
-                    header === "BTC Vol. to Global Vol. Ratio"
-                ) {
-                    // Format angka dengan pemisah ribuan dan 2 angka desimal
-                    const formattedNum = numberValue.toLocaleString("en-US", {
-                        minimumFractionDigits: 2, // minimum 2 desimal
-                    });
-
-                    return `<span>${formattedNum} %</span>`;
-                }
-
-                //* Format ROI
-                if (header === "ROI") {
-                    if (!isNaN(numberValue)) {
-                        return `<span">${numberValue} %</span>`;
-                    }
-                }
-
-                //* Format warna Hype Activity Token
-                if (header === "Hype Activity") {
-                    // const cleanedTokenHypeActivity = data.replace(/[$,]/g, "");
-
-                    if (!isNaN(numberValue)) {
-                        return `<span class="${
-                            numberValue >= limitMedianActToken
-                                ? "positive"
-                                : "warning"
-                        }">${numberValue} %</span>`;
-                    }
-                }
-
-                //* Format warna Activity Sector
-                if (header === "Activity") {
-                    // const cleanedSectorHypeActivity = data.replace(/[$,]/g, "");
-
-                    if (!isNaN(numberValue)) {
-                        return `<span class="${
-                            numberValue >= limitMedianActSector
-                                ? "positive"
-                                : "warning"
-                        }">${numberValue} %</span>`;
-                    }
-                }
-
-                //* Format warna data persentase change
-                if (
-                    header === "Market Cap (Change 24h)" ||
-                    header === "Price Changes 24h" ||
-                    header === "Price Changes 7d" ||
-                    header === "Price Changes 30d"
-                ) {
-                    if (!isNaN(numberValue)) {
-                        return `<span class="${
-                            numberValue > 0 ? "positive" : "negative"
-                        }">${numberValue.toFixed(2)} %</span>`;
-                    }
-                }
-
-                //* Warna Volatility 24h
-                if (header === "Volatility 24h") {
-                    if (!isNaN(numberValue) && numberValue >= 10) {
-                        return `<span class= "negative">${numberValue.toFixed(
-                            2
-                        )} %</span>`;
-                    } else if (
-                        !isNaN(numberValue) &&
-                        numberValue > 5 &&
-                        numberValue < 10
-                    ) {
-                        return `<span class= "warning">${numberValue.toFixed(
-                            2
-                        )} %</span>`;
-                    } else if (!isNaN(numberValue) && numberValue <= 5) {
-                        return `<span class= "positive">${numberValue.toFixed(
-                            2
-                        )} %</span>`;
-                    }
-                }
-
-                //* Warna Circulating To Supply Ratio
-                if (header === "Circulating to Supply Ratio") {
-                    if (!isNaN(numberValue) && numberValue >= 0.8) {
-                        return `<span class= "positive">${numberValue.toFixed(
-                            2
-                        )}</span>`;
-                    } else if (
-                        !isNaN(numberValue) &&
-                        numberValue > 0.501 &&
-                        numberValue < 0.79999
-                    ) {
-                        return `<span class= "warning">${numberValue.toFixed(
-                            2
-                        )}</span>`;
-                    } else if (!isNaN(numberValue) && numberValue <= 0.5) {
-                        return `<span class= "negative">${numberValue.toFixed(
-                            2
-                        )}</span>`;
-                    }
-                }
-
-                //* Format warna growth degrowth mcap
-                if (
-                    data === "Mid Cap → Small Cap" ||
-                    data === "Large Cap → Mid Cap" ||
-                    data === "Small Cap → Micro Cap"
-                ) {
-                    return `<span class="negative">${data}</span>`;
-                } else if (
-                    data === "Small Cap → Mid Cap" ||
-                    data === "Mid Cap → Large Cap" ||
-                    data === "Micro Cap → Small Cap"
-                ) {
-                    return `<span class="positive">${data}</span>`;
-                }
-
-                //* Format warna global dominance
-                if (
-                    header === "Signal Dominance" &&
-                    (data === "BITCOIN" || data === "ALTCOIN")
-                ) {
-                    return `<span class="positive">${data}</span>`;
-                } else if (
-                    header === "Signal Dominance" &&
-                    data === "HOLD STABLECOIN"
-                ) {
-                    return `<span class="warning">${data}</span>`;
-                } else if (
-                    header === "Signal Dominance" &&
-                    data === "EXIT MARKET"
-                ) {
-                    return `<span class="percent-negative">${data}</span>`;
-                }
-
-                //*
-
-                return data; // Default
-            },
+            title: titleHeader(header),
+            render: (data, _, __) => formatCellContent(data, header, index)
         })),
         layout: {
             topEnd: {
@@ -431,263 +358,420 @@ function initializeTable(sheetTitle, { firstLoad }) {
         language: {
             emptyTable: "No more data",
             search: "Search :",
-            // lengthMenu: "Tampilkan _MENU_ data",
             info: "_START_ - _END_ from _TOTAL_",
         },
     });
 }
-//!========================END OF MAIN CODE===============================
 
-// TODO  FUNGSI CUSTOM LAYOUT TABEL
+/**
+ * Formats cell content based on column type
+ * @param {*} data - Cell data
+ * @param {string} header - Column header
+ * @param {number} index - Column index
+ * @returns {string} - Formatted HTML content
+ */
+function formatCellContent(data, header, index) {
+    // Format first column (token names)
+    if (index === 0) {
+        let tokenCol = `<strong>${data}</strong>`;
+
+        // Highlight tokens in the hype list
+        hypeTokenList.forEach(item => {
+            if (item.token === data) {
+                tokenCol = `<strong class="warning">${data}</strong>`;
+            }
+        });
+
+        return tokenCol;
+    }
+
+    const numberValue = parseFloat(data);
+
+    // Format currency values
+    const currencyColumns = [
+        "Price", "Total Volume", "Volume 24h", "Market Cap", "FDV",
+        "BTC Price", "BTC Volume", "Global Marketcap", "Global Volume"
+    ];
+
+    if (currencyColumns.includes(header)) {
+        if (!isNaN(numberValue)) {
+            const formattedPrice = numberValue.toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
+                minimumFractionDigits: 2
+            });
+            return `<span>${formattedPrice}</span>`;
+        }
+    }
+
+    // Format supply numbers
+    if (header === "Circulating Supply" || header === "Total Supply") {
+        if (!isNaN(numberValue)) {
+            const formattedNum = numberValue.toLocaleString("en-US", {
+                maximumFractionDigits: 0
+            });
+            return `<span>${formattedNum}</span>`;
+        }
+    }
+
+    // Format percentage values
+    const percentColumns = [
+        "Turnover (% Cirulating Supply Traded)", "BTC Dominance",
+        "BTC Vol. to Global Vol. Ratio"
+    ];
+
+    if (percentColumns.includes(header)) {
+        if (!isNaN(numberValue)) {
+            const formattedNum = numberValue.toLocaleString("en-US", {
+                minimumFractionDigits: 2
+            });
+            return `<span>${formattedNum} %</span>`;
+        }
+    }
+
+    // Format ROI
+    if (header === "ROI" && !isNaN(numberValue)) {
+        return `<span>${numberValue} %</span>`;
+    }
+
+    // Format Hype Activity with color
+    if (header === "Hype Activity" && !isNaN(numberValue)) {
+        const colorClass = numberValue >= limitMedianActToken ? "positive" : "warning";
+        return `<span class="${colorClass}">${numberValue} %</span>`;
+    }
+
+    // Format Activity Sector with color
+    if (header === "Activity" && !isNaN(numberValue)) {
+        const colorClass = numberValue >= limitMedianActSector ? "positive" : "warning";
+        return `<span class="${colorClass}">${numberValue} %</span>`;
+    }
+
+    // Format price changes with color
+    const priceChangeColumns = [
+        "Market Cap (Change 24h)", "Price Changes 24h",
+        "Price Changes 7d", "Price Changes 30d"
+    ];
+
+    if (priceChangeColumns.includes(header) && !isNaN(numberValue)) {
+        const colorClass = numberValue > 0 ? "positive" : "negative";
+        return `<span class="${colorClass}">${numberValue.toFixed(2)} %</span>`;
+    }
+
+    // Format Volatility with color
+    if (header === "Volatility 24h" && !isNaN(numberValue)) {
+        let colorClass = "positive";
+        if (numberValue >= 10) {
+            colorClass = "negative";
+        } else if (numberValue > 5) {
+            colorClass = "warning";
+        }
+        return `<span class="${colorClass}">${numberValue.toFixed(2)} %</span>`;
+    }
+
+    // Format Circulating to Supply Ratio with color
+    if (header === "Circulating to Supply Ratio" && !isNaN(numberValue)) {
+        let colorClass = "negative";
+        if (numberValue >= 0.8) {
+            colorClass = "positive";
+        } else if (numberValue > 0.501) {
+            colorClass = "warning";
+        }
+        return `<span class="${colorClass}">${numberValue.toFixed(2)}</span>`;
+    }
+
+    // Format growth/degrowth with color
+    const degrowthValues = ["Mid Cap → Small Cap", "Large Cap → Mid Cap", "Small Cap → Micro Cap"];
+    const growthValues = ["Small Cap → Mid Cap", "Mid Cap → Large Cap", "Micro Cap → Small Cap"];
+
+    if (degrowthValues.includes(data)) {
+        return `<span class="negative">${data}</span>`;
+    } else if (growthValues.includes(data)) {
+        return `<span class="positive">${data}</span>`;
+    }
+
+    // Format Signal Dominance with color
+    if (header === "Signal Dominance") {
+        if (data === "BITCOIN" || data === "ALTCOIN") {
+            return `<span class="positive">${data}</span>`;
+        } else if (data === "HOLD STABLECOIN") {
+            return `<span class="warning">${data}</span>`;
+        } else if (data === "EXIT MARKET") {
+            return `<span class="percent-negative">${data}</span>`;
+        }
+    }
+
+    // Default return
+    return data;
+}
+
+//=============================================================================
+// TABLE CONFIGURATION HELPERS
+//=============================================================================
+
+/**
+ * Determines table layout configuration based on the current table type
+ * @param {string} currentTableTitle - The title of the current table
+ * @returns {Object} - Configuration object for table layout
+ */
 function tableLayout(currentTableTitle) {
     let setColumnPriority = [];
     let orderBy = [];
     let ordering = true;
 
-    //* Layout Sector
-    if (currentTableTitle === "Sector") {
-        orderBy = [2, "desc"];
-        setColumnPriority = [
-            {
-                responsivePriority: 1,
-                targets: 0,
-                orderable: false,
-                className: "text-wrap",
-            },
-            { responsivePriority: 2, targets: -3, className: "text-wrap" },
-            { responsivePriority: 3, targets: -2 },
-        ];
+    // Configure column priorities and ordering based on table type
+    switch (currentTableTitle) {
+        case "Sector":
+            orderBy = [2, "desc"];
+            setColumnPriority = [
+                {
+                    responsivePriority: 1,
+                    targets: 0,
+                    orderable: false,
+                    className: "text-wrap",
+                },
+                { responsivePriority: 2, targets: -3, className: "text-wrap" },
+                { responsivePriority: 3, targets: -2 },
+            ];
+            break;
 
-        //* Layout Kolom Token Valuation
-    } else if (currentTableTitle === "Token Valuation") {
-        orderBy = sortingToken(dropdownButtonSorting.textContent);
+        case "Token Valuation":
+            orderBy = sortingToken(dropdownButtonSorting.textContent);
+            setColumnPriority = [
+                {
+                    responsivePriority: 1,
+                    targets: 0, // Token name column
+                    className: "text-wrap",
+                    orderable: false,
+                },
+                {
+                    responsivePriority: 2,
+                    targets: 4, // Market Cap Change column
+                    orderable: false,
+                },
+                {
+                    responsivePriority: 3,
+                    targets: -5, // Hype Activity column
+                    orderable: false,
+                },
+                {
+                    responsivePriority: 4,
+                    targets: -6, // Turnover column
+                    orderable: false,
+                },
+                { targets: 1, orderable: false },
+            ];
+            break;
 
-        setColumnPriority = [
-            {
-                responsivePriority: 1,
-                targets: 0, // Kolom Tokens
-                className: "text-wrap",
-                orderable: false,
-            },
-            {
-                responsivePriority: 2,
-                targets: 4, // Kolom Mcap Change
+        case "Global Dominance":
+            orderBy = [0]; // Default order by Timestamp
+            ordering = false;
+            setColumnPriority = [
+                {
+                    responsivePriority: 1,
+                    targets: 0, // Timestamp column
+                    className: "text-wrap",
+                },
+                {
+                    responsivePriority: 2,
+                    targets: 2, // BTC Dominance column
+                },
+                {
+                    responsivePriority: 3,
+                    targets: -1, // Signal Dominance column
+                },
+            ];
+            break;
 
-                orderable: false,
-            },
-            {
-                responsivePriority: 3,
-                targets: -5, // Kolom Hype Activity
-
-                orderable: false,
-            },
-            {
-                responsivePriority: 4,
-                targets: -6, // Kolom Turn Over
-                orderable: false,
-            },
-            { targets: 1, orderable: false },
-        ];
-
-        //* Layout Kolom Global Dominance
-    } else if (currentTableTitle === "Global Dominance") {
-        orderBy = [0]; // default orderby Timestamp
-        ordering = false;
-        setColumnPriority = [
-            {
-                responsivePriority: 1,
-                targets: 0, // Kolom Timestamp
-                className: "text-wrap",
-            },
-            {
-                responsivePriority: 2,
-                targets: 2, // Kolom BTC DOM
-                // className: "text-center",
-            },
-            {
-                responsivePriority: 3,
-                targets: -1, // Kolom Signal Dominance
-                // className: "text-center",
-            },
-        ];
-
-        //* Layout Kolom Growth Degrowth
-    } else if (currentTableTitle === "Growth Degrowth") {
-        orderBy = [0]; // default orderby timestamp
-        setColumnPriority = [
-            {
-                responsivePriority: 1,
-                targets: 0, // Kolom timestamp
-                orderable: false,
-                className: "text-wrap",
-            },
-            {
-                responsivePriority: 2,
-                targets: 1, // Kolom Token
-                className: "text-wrap",
-            },
-            {
-                responsivePriority: 3,
-                targets: -1, // Kolom category change
-                orderable: false,
-            },
-        ];
+        case "Growth Degrowth":
+            orderBy = [0]; // Default order by timestamp
+            setColumnPriority = [
+                {
+                    responsivePriority: 1,
+                    targets: 0, // Timestamp column
+                    orderable: false,
+                    className: "text-wrap",
+                },
+                {
+                    responsivePriority: 2,
+                    targets: 1, // Token column
+                    className: "text-wrap",
+                },
+                {
+                    responsivePriority: 3,
+                    targets: -1, // Category change column
+                    orderable: false,
+                },
+            ];
+            break;
     }
 
     return { setColumnPriority, orderBy, ordering };
 }
 
-// TODO TOKEN VALUATION SORTING
+/**
+ * Determines sorting configuration for Token Valuation table
+ * @param {string} dropdownValue - Selected sorting option
+ * @returns {Array} - Sorting configuration array [columnIndex, direction]
+ */
 function sortingToken(dropdownValue) {
-    let sorting = [2, "desc"]; // default sorting volume
+    // Default sorting by volume
+    let sorting = [2, "desc"];
 
-    if (dropdownValue === "Total Volume") {
-        sorting = [2, "desc"];
-    } else if (dropdownValue === "Market Cap") {
-        sorting = [3, "desc"];
-    } else if (dropdownValue === "Market Cap Change") {
-        sorting = [4, "desc"];
-    } else if (dropdownValue === "Hype Activity") {
-        sorting = [13, "desc"];
+    // Set sorting based on selected option
+    switch (dropdownValue) {
+        case "Total Volume":
+            sorting = [2, "desc"];
+            break;
+        case "Market Cap":
+            sorting = [3, "desc"];
+            break;
+        case "Market Cap Change":
+            sorting = [4, "desc"];
+            break;
+        case "Hype Activity":
+            sorting = [13, "desc"];
+            break;
     }
+
     return sorting;
 }
 
-// TODO FUNGSI CUSTOM NAMA HEADER TABEL
+/**
+ * Formats table header titles for better display
+ * @param {string} titleTableHeader - Original header title
+ * @returns {string} - Formatted header title
+ */
 function titleHeader(titleTableHeader) {
-    let titleHeader = titleTableHeader;
+    // Create a mapping of long headers to shorter versions
+    const headerMap = {
+        "Market Cap (Change 24h)": "MCap Chg 24h",
+        "BTC Dominance": "BTC Dom",
+        "Turnover (% Cirulating Supply Traded)": "Turnover (%)",
+        "Signal Dominance": "Dominance"
+    };
 
-    if (titleTableHeader === "Market Cap (Change 24h)") {
-        titleHeader = "MCap Chg 24h";
-        return titleHeader;
-    } else if (titleTableHeader === "BTC Dominance") {
-        titleHeader = "BTC Dom";
-        return titleHeader;
-    } else if (titleHeader === "Turnover (% Cirulating Supply Traded)") {
-        titleHeader = "Turnover (%)";
-        return titleHeader;
-    } else if (titleHeader === "Signal Dominance") {
-        titleHeader = "Dominance";
-        return titleHeader;
-    }
-
-    return titleHeader;
+    // Return the mapped header or the original if not in the map
+    return headerMap[titleTableHeader] || titleTableHeader;
 }
-//=======================================================
+//=============================================================================
+// UI INTERACTION AND NAVIGATION
+//=============================================================================
 
-// TODO FUNGSI GANTI PAGE DAN TABEL BERDASARKAN TITLE SHEET
+/**
+ * Changes the displayed data based on the selected sheet
+ * @param {string} sheetTitle - Title of the sheet to display
+ */
 function changeData(sheetTitle) {
-    // ! jika page sama maka tidak panggil fungsi
-
+    // Skip if already on the selected page
     if (sheetTitle === currentPageTitle.textContent) {
         return;
     }
 
     showLoading({ isLoading: true });
 
+    // Update UI elements for the selected sheet
     showHideDropdown(sheetTitle);
 
+    // Verify data exists
     if (!cachedData[sheetTitle]) {
         console.error("Data not found for:", sheetTitle);
+        showLoading({ isLoading: false });
         return;
     }
 
-    initializeTable(sheetTitle, (firstLoad = false));
+    // Initialize table with the selected data
+    initializeTable(sheetTitle, { firstLoad: false });
 
+    // Hide loading after a short delay for better UX
     setTimeout(() => {
         showLoading({ isLoading: false });
-    }, 500); // 1000 milisecond = 1 detik
+    }, 500);
 }
-//=======================================================
 
-// TODO FUNGSI MATIKAN SEARCHING PADA TABLE
+/**
+ * Determines whether search functionality should be enabled for a table
+ * @param {string} sheetTitle - The title of the sheet
+ * @returns {boolean} - Whether search should be enabled
+ */
 function showHideSearch(sheetTitle) {
-    let searchingOn = true;
-    if (sheetTitle === "Sector" || sheetTitle === "Global Dominance") {
-        searchingOn = false;
-    }
-
-    return searchingOn;
+    // Disable search for Sector and Global Dominance tables
+    return !(sheetTitle === "Sector" || sheetTitle === "Global Dominance");
 }
-// =====================================================
 
-// TODO SHOW HIDE DROPDOWN TOKEN VALUATION
+/**
+ * Shows or hides UI sections based on the selected sheet
+ * @param {string} sheetTitle - The title of the sheet
+ */
 function showHideDropdown(sheetTitle) {
-    // Show dan Hide dropdown market cap dengan class: dropdown mb-4
-
+    // Get references to UI sections
     const sectionFilter = document.getElementById("section-filter");
     const sectionPerform = document.getElementById("section-perform");
     const sectionGlobalInfo = document.getElementById("section-global-info");
 
-    // Jika token valuation, tampilkan dropdown market cap dan sorting
+    // Configure UI based on selected sheet
     if (sheetTitle === "Token Valuation") {
+        // Show all sections for Token Valuation
         sectionFilter.style.display = "block";
         sectionPerform.style.display = "block";
         sectionGlobalInfo.style.display = "block";
     } else if (sheetTitle === "Sector") {
+        // Show only global info for Sector
         sectionFilter.style.display = "none";
         sectionPerform.style.display = "none";
         sectionGlobalInfo.style.display = "block";
     } else {
+        // Hide all sections for other sheets
         sectionFilter.style.display = "none";
         sectionPerform.style.display = "none";
         sectionGlobalInfo.style.display = "none";
     }
 }
-//=======================================================
 
-// TODO HANDLE FUNGSI DROPDOWN
+/**
+ * Initialize event listeners for UI interactions
+ */
 document.addEventListener("DOMContentLoaded", function () {
-    //* =================== MarketCap Dropdown =====================
+    // Market Cap Dropdown handler
     marketCapDropdown.addEventListener("click", function (event) {
         if (event.target && event.target.matches("a.dropdown-item")) {
-            const selectedValue = event.target.getAttribute("data-value");
-            const selectedText = event.target.textContent;
-            // console.log("Selected Market Cap:", selectedValue);
+            // Update dropdown button text
+            dropdownButtonMcap.textContent = event.target.textContent;
 
-            // Perbarui teks tombol dropdown dengan teks item yang dipilih
-            dropdownButtonMcap.textContent = selectedText;
-
-            // Lakukan sesuatu dengan nilai yang dipilih, misalnya panggil fungsi untuk memproses data
-
+            // Refresh table with new filter
             showLoading({ isLoading: true });
-            initializeTable("Token Valuation", (firstLoad = false));
+            initializeTable("Token Valuation", { firstLoad: false });
 
             setTimeout(() => {
                 showLoading({ isLoading: false });
-            }, 300); // 1000 milisecond = 1 detik
+            }, 300);
         }
     });
 
-    //* ================== Sorting Dropdown =================
+    // Sorting Dropdown handler
     sortingDropdown.addEventListener("click", function (event) {
         if (event.target && event.target.matches("a.dropdown-item")) {
-            const selectedValue = event.target.getAttribute("data-value");
-            const selectedText = event.target.textContent;
-            // console.log("Selected Sorting:", selectedValue);
+            // Update dropdown button text
+            dropdownButtonSorting.textContent = event.target.textContent;
 
-            // Perbarui teks tombol dropdown dengan teks item yang dipilih
-            dropdownButtonSorting.textContent = selectedText;
-
-            // Lakukan sesuatu dengan nilai yang dipilih, misalnya panggil fungsi untuk memproses data
+            // Refresh table with new sorting
             showLoading({ isLoading: true });
-            initializeTable("Token Valuation", (firstLoad = false));
+            initializeTable("Token Valuation", { firstLoad: false });
 
             setTimeout(() => {
                 showLoading({ isLoading: false });
-            }, 300); // 1000 milisecond = 1 detik
+            }, 300);
         }
     });
 
-    // *==================== ONLY GROWTH MCAP =====================
-    var checkbox = growthMcapCheck;
-    checkbox.addEventListener("change", function () {
+    // Growth Market Cap checkbox handler
+    growthMcapCheck.addEventListener("change", function () {
+        // Refresh table with new filter
         showLoading({ isLoading: true });
-        initializeTable("Token Valuation", (firstLoad = false));
+        initializeTable("Token Valuation", { firstLoad: false });
 
         setTimeout(() => {
             showLoading({ isLoading: false });
-        }, 300); // 1000 milisecond = 1 detik
+        }, 300);
     });
 });
 //=======================================================
@@ -703,121 +787,64 @@ function filteredTableRow({ data, sheetTitle }) {
 
     // Kalkulasi untuk marketcap token valuation
     if (sheetTitle === "Token Valuation") {
-        for (let i = 0; i < data.length; i++) {
-            // Hapus simbol $ dan koma
-            // Ambil kolom 3 untuk marketcap
-            // const cleanedNumMcap = data[i][3].replace(/[$,]/g, "");
-            // const cleanedTokenHypeActivity = data[i][13].replace(/[$,]/g, "");
+        // Define market cap thresholds in a lookup object
+        const marketCapThresholds = {
+            "Large Cap": { min: 10000000000, max: Infinity },
+            "Mid Cap": { min: 1000000000, max: 10000000000 },
+            "Small Cap": { min: 100000000, max: 1000000000 },
+            "Micro Cap": { min: 0, max: 100000000 },
+            "All Market Cap": { min: 0, max: Infinity }
+        };
 
-            //* Convert to desimal if data is string
+        // Get threshold for current selection
+        const threshold = marketCapThresholds[marketCap];
+
+        // Process data in a single loop
+        for (let i = 0; i < data.length; i++) {
             const marketcapNum = parseFloat(data[i][3]);
             const tokenHypeActivity = parseFloat(data[i][13]);
             const mcapChange = parseFloat(data[i][4]);
 
-            //* Filter Market Cap
-            if (marketCap === "Large Cap" && marketcapNum > 10000000000) {
+            // Check if token is in the selected market cap range
+            if (marketcapNum >= threshold.min && marketcapNum < threshold.max) {
+                // Add to top 5 data
                 dataForTop5.push(data[i]);
-                // If only positive mcap change
-                if (onlyGrowthMcap.checked) {
-                    if (mcapChange > 0) {
-                        dataRow.push(data[i]);
-                        tokenActivityData.push(tokenHypeActivity);
-                    }
-                } else {
+
+                // Add to filtered data if it meets growth criteria
+                if (!onlyGrowthMcap.checked || mcapChange > 0) {
                     dataRow.push(data[i]);
                     tokenActivityData.push(tokenHypeActivity);
                 }
-                tokenActivityData.push(tokenHypeActivity);
-            } else if (
-                marketCap === "Mid Cap" &&
-                marketcapNum > 1000000000 &&
-                marketcapNum <= 10000000000
-            ) {
-                dataForTop5.push(data[i]);
-                // If only positive mcap change
-                if (onlyGrowthMcap.checked) {
-                    if (mcapChange > 0) {
-                        dataRow.push(data[i]);
-                        tokenActivityData.push(tokenHypeActivity);
-                    }
-                } else {
-                    dataRow.push(data[i]);
-                    tokenActivityData.push(tokenHypeActivity);
-                }
-                tokenActivityData.push(tokenHypeActivity);
-            } else if (
-                marketCap === "Small Cap" &&
-                marketcapNum > 100000000 &&
-                marketcapNum <= 1000000000
-            ) {
-                dataForTop5.push(data[i]);
-                // If only positive mcap change
-                if (onlyGrowthMcap.checked) {
-                    if (mcapChange > 0) {
-                        dataRow.push(data[i]);
-                        tokenActivityData.push(tokenHypeActivity);
-                    }
-                } else {
-                    dataRow.push(data[i]);
-                    tokenActivityData.push(tokenHypeActivity);
-                }
-                tokenActivityData.push(tokenHypeActivity);
-            } else if (marketCap === "Micro Cap" && marketcapNum <= 100000000) {
-                dataForTop5.push(data[i]);
-                // If only positive mcap change
-                if (onlyGrowthMcap.checked) {
-                    if (mcapChange > 0) {
-                        dataRow.push(data[i]);
-                        tokenActivityData.push(tokenHypeActivity);
-                    }
-                } else {
-                    dataRow.push(data[i]);
-                    tokenActivityData.push(tokenHypeActivity);
-                }
-                tokenActivityData.push(tokenHypeActivity);
-            } else if (marketCap === "All Market Cap") {
-                dataForTop5.push(data[i]);
-                // If only positive mcap change
-                if (onlyGrowthMcap.checked) {
-                    if (mcapChange > 0) {
-                        dataRow.push(data[i]);
-                        tokenActivityData.push(tokenHypeActivity);
-                    }
-                } else {
-                    dataRow.push(data[i]);
-                    tokenActivityData.push(tokenHypeActivity);
-                }
+
+                // Always collect activity data for calculations
                 tokenActivityData.push(tokenHypeActivity);
             }
         }
 
-        //* Calculate Median & Mean
-        if (
-            marketCap === "Large Cap" ||
-            marketCap === "Mid Cap" ||
-            marketCap === "All Market Cap"
-        ) {
+        // Calculate median or mean based on market cap category
+        if (["Large Cap", "Mid Cap", "All Market Cap"].includes(marketCap)) {
             limitMedianActToken = calculateMedian(tokenActivityData);
         } else {
             limitMedianActToken = calculateAverage(tokenActivityData);
         }
 
         getHypeTokens(dataForTop5);
-        return dataRow; // return data after filter
+        return dataRow;
 
-        // Kalkulasi untuk sector
+    // Kalkulasi untuk sector
     } else if (sheetTitle === "Sector") {
-        for (let i = 0; i < data.length; i++) {
-            dataRow.push(data[i]);
-            // const cleanedSectorHypeActivity = data[i][4].replace(/[$,]/g, "");
-            const sectorHypeActivity = parseFloat(data[i][4]);
-            sectorActivityData.push(sectorHypeActivity);
-        }
+        // Process sector data more efficiently
+        sectorActivityData = data.map(row => {
+            dataRow.push(row);
+            return parseFloat(row[4]); // Extract sector activity values
+        }).filter(val => !isNaN(val)); // Filter out non-numeric values
+
         limitMedianActSector = calculateMedian(sectorActivityData);
-    } else {
-        dataRow = data;
         return dataRow;
     }
+
+    // Default case - return data as is
+    return data;
 }
 // ====================================================
 
@@ -827,218 +854,164 @@ function getHypeTokens(data) {
     // *Gunakan IQR untuk mendeteksi outlier.
     // *Gunakan Percentile (90th atau 95th) untuk mengidentifikasi token dengan perubahan besar.
     // *Gunakan Z-Score jika Anda yakin data memiliki distribusi mendekati normal.
-    let marketCapChanges = [];
-    let hypeActivityValues = [];
-    let positiveMcapChanges = [];
 
-    //* Kumpulkan semua nilai turnover dan market cap change
-    for (let i = 0; i < data.length; i++) {
-        // const turnover = parseFloat(data[i][12]);
-        const marketCapChange = parseFloat(data[i][4]);
-        const hypeActivity = parseFloat(data[i][13]);
-
-        if (!isNaN(hypeActivity)) hypeActivityValues.push(hypeActivity);
-        if (!isNaN(marketCapChange)) marketCapChanges.push(marketCapChange);
-        if (!isNaN(marketCapChange) && marketCapChange > 0) {
-            positiveMcapChanges.push(marketCapChange);
-        }
+    // Early return for empty data
+    if (!data || data.length === 0) {
+        top5TokenList = [];
+        hypeTokenList = [];
+        top5TokenText.textContent = `Top 0 Hype ${dropdownButtonMcap.textContent} Tokens`;
+        top5TokenId.textContent = "";
+        return;
     }
 
-    //* Hitung median atau rata-rata
-    const marketCapChangeThreshold = calculateMedian(marketCapChanges);
-    const positiveMcapChangeThreshold = calculateMedian(positiveMcapChanges);
-    let hypeActivityThreshold = limitMedianActToken;
+    // Extract values in a single pass using reduce
+    const { marketCapChanges, hypeActivityValues } = data.reduce((acc, row) => {
+        const marketCapChange = parseFloat(row[4]);
+        const hypeActivity = parseFloat(row[13]);
 
-    const iqrMcapChange = calculateOutlier(marketCapChanges);
+        if (!isNaN(hypeActivity)) acc.hypeActivityValues.push(hypeActivity);
+        if (!isNaN(marketCapChange)) acc.marketCapChanges.push(marketCapChange);
+
+        return acc;
+    }, { marketCapChanges: [], hypeActivityValues: [] });
+
+    // Calculate outliers
+    const outlierMcapChange = calculateOutlier(marketCapChanges);
     const outlierHypeToken = calculateOutlier(hypeActivityValues);
 
-    // console.log(outlierHypeToken.upperBound);
+    // Filter tokens in a more efficient way
+    const filteredTokens = [];
+    const outlierSet = new Set(outlierMcapChange.outliers); // Use Set for faster lookups
 
-    let filteredTokens = [];
+    // Process data in a single loop
+    data.forEach(row => {
+        const token = row[0];
+        const marketCapChange = parseFloat(row[4]);
+        const turnover = parseFloat(row[12]);
+        const hypeActivity = parseFloat(row[13]);
 
-    //* Filter data berdasarkan threshold
-    for (let i = 0; i < data.length; i++) {
-        const token = data[i][0];
-        const marketCapChange = parseFloat(data[i][4]);
-        const turnover = parseFloat(data[i][12]);
-        const hypeActivity = parseFloat(data[i][13]);
+        // Check if this is an outlier token
+        if (outlierSet.has(marketCapChange) &&
+            marketCapChange > 0 &&
+            hypeActivity > outlierHypeToken.upperBound) {
 
-        //* Outlier detection mcap
-        iqrMcapChange.outliers.map((outlierMcap) => {
-            if (
-                marketCapChange === outlierMcap &&
-                marketCapChange > 0 &&
-                hypeActivity > outlierHypeToken.upperBound
-            ) {
-                filteredTokens.push({
-                    token: token,
-                    marketCapChange: marketCapChange,
-                    turnover: turnover,
-                    hypeActivity: hypeActivity,
-                });
-            }
-        });
+            filteredTokens.push({
+                token,
+                marketCapChange,
+                turnover,
+                hypeActivity
+            });
+        }
+    });
 
-        // if (
-        //     marketCapChange > positiveMcapChangeThreshold &&
-        //     marketCapChange > 0 &&
-        //     hypeActivity > hypeActivityThreshold
-        // ) {
-        //     filteredTokens.push({
-        //         token: token,
-        //         marketCapChange: marketCapChange,
-        //         turnover: turnover,
-        //         hypeActivity: hypeActivity,
-        //     });
-        // }
-    }
-
-    // Urutkan berdasarkan Hype Activity (descending)
+    // Sort by hype activity (descending)
     filteredTokens.sort((a, b) => b.hypeActivity - a.hypeActivity);
 
-    // Ambil 5 token hype
+    // Get top 5 tokens
     const top5Tokens = filteredTokens.slice(0, 5);
     top5TokenList = top5Tokens;
-
-    // Hype Token
     hypeTokenList = filteredTokens;
 
+    // Update UI
     top5TokenText.textContent = `Top ${top5TokenList.length} Hype ${dropdownButtonMcap.textContent} Tokens`;
-
-    top5TokenId.textContent = top5Tokens
-        .map((item) => `${item.token}`)
-        .join(", ");
+    top5TokenId.textContent = top5Tokens.map(item => item.token).join(", ");
 }
 
 // TODO FUNGSI KALKULASI MEDIAN
 function calculateMedian(arr) {
-    // Pastikan data terurut
-    arr.sort((a, b) => a - b); // Urutkan array dari kecil ke besar
+    // Handle edge cases
+    if (!arr || arr.length === 0) return 0;
+    if (arr.length === 1) return arr[0];
 
-    const n = arr.length; // Panjang array
+    // Create a copy to avoid modifying the original array
+    const sortedArr = [...arr].sort((a, b) => a - b);
+    const n = sortedArr.length;
 
+    // Calculate median based on array length
     if (n % 2 === 0) {
-        // Jika jumlah elemen genap, ambil rata-rata dari dua elemen tengah
-        return (arr[n / 2 - 1] + arr[n / 2]) / 2;
+        // Even length - average of middle elements
+        return (sortedArr[n / 2 - 1] + sortedArr[n / 2]) / 2;
     } else {
-        // Jika jumlah elemen ganjil, ambil elemen tengah
-        return arr[Math.floor(n / 2)];
+        // Odd length - middle element
+        return sortedArr[Math.floor(n / 2)];
     }
 }
 
 // =====================================================
 // TODO FUNGSI KALKULASI AVERAGE/MEAN
 function calculateAverage(arr) {
-    const sum = arr.reduce((a, b) => a + b, 0);
-    return sum / arr.length;
+    // Handle empty array
+    if (!arr || arr.length === 0) return 0;
+
+    // Calculate average in one line
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
 }
 
 //TODO FUNGSI IQR OUTLIER DETECTION
 function calculateOutlier(data) {
-    // Urutkan data
-    data.sort((a, b) => a - b);
+    // Handle empty data
+    if (!data || data.length === 0) {
+        return {
+            Q1: 0, Q3: 0, IQR: 0, lowerBound: 0, upperBound: 0,
+            percentile90: 0, outliers: []
+        };
+    }
 
-    // IQR Calculation
+    // Create a sorted copy to avoid modifying original data
+    const sortedData = [...data].sort((a, b) => a - b);
+
+    // Helper function for quartile calculation with bounds checking
     function getQuartile(data, quartile) {
         const pos = (data.length - 1) * quartile;
         const base = Math.floor(pos);
         const rest = pos - base;
-        return data[base] + rest * (data[base + 1] - data[base]);
+
+        // Prevent out-of-bounds access
+        if (base + 1 < data.length) {
+            return data[base] + rest * (data[base + 1] - data[base]);
+        }
+        return data[base];
     }
 
-    const Q1 = getQuartile(data, 0.25);
-    const Q3 = getQuartile(data, 0.75);
+    // Calculate quartiles and IQR
+    const Q1 = getQuartile(sortedData, 0.25);
+    const Q3 = getQuartile(sortedData, 0.75);
     const IQR = Q3 - Q1;
     const lowerBound = Q1 - 1.5 * IQR;
     const upperBound = Q3 + 1.5 * IQR;
 
-    // Mean Calculation
-    const mean = data.reduce((sum, val) => sum + val, 0) / data.length;
+    // Calculate percentile with bounds checking
+    const percentile90Index = Math.min(Math.ceil(0.9 * sortedData.length) - 1, sortedData.length - 1);
+    const percentile90 = sortedData[Math.max(0, percentile90Index)];
 
-    // StdDev Calculation
-    const stdDev = Math.sqrt(
-        data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) /
-            data.length
-    );
+    // Find outliers
+    const outliers = sortedData.filter(x => x < lowerBound || x > upperBound);
 
-    // Z-Score Calculation
-    const zScores = data.map((x) => (x - mean) / stdDev);
-
-    // Percentile Calculation
-    function getPercentile(data, percentile) {
-        const index = Math.ceil(percentile * data.length) - 1;
-        return data[index];
-    }
-    const percentile90 = getPercentile(data, 0.9);
-
-    const outliers = data.filter((x) => x < lowerBound || x > upperBound);
-
-    const tokensAbovePercentile90 = data.filter((x) => x > percentile90);
-
-    // Output
+    // Return only what's needed for better performance
     return {
         Q1,
         Q3,
         IQR,
         lowerBound,
         upperBound,
-        zScores,
         percentile90,
-        tokensAbovePercentile90,
-        outliers,
+        outliers
     };
 }
 
-//TODO! CATATAN LOG TRANSFORMATION
+//=============================================================================
+// APPLICATION INITIALIZATION
+//=============================================================================
 
-// function filterTurnoverRatios(data) {
-//     // Step 1: Urutkan data
-//     data.sort((a, b) => a - b);
+/**
+ * Initialize the application when the DOM is fully loaded
+ * Fetches all data and sets up the initial view
+ */
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("Elephant Screener initializing...");
 
-//     // Step 2: IQR Calculation
-//     function getQuartile(data, quartile) {
-//         const pos = (data.length - 1) * quartile;
-//         const base = Math.floor(pos);
-//         const rest = pos - base;
-//         return data[base] + rest * (data[base + 1] - data[base]);
-//     }
+    // Fetch all data from API
+    fetchAllData();
 
-//     const Q1 = getQuartile(data, 0.25);
-//     const Q3 = getQuartile(data, 0.75);
-//     const IQR = Q3 - Q1;
-//     const upperBound = Q3 + 1.5 * IQR;
-
-//     // Step 3: Log Transformation
-//     const logRatios = data.map((x) => Math.log(x));
-//     const logMean =
-//         logRatios.reduce((sum, val) => sum + val, 0) / logRatios.length;
-//     const logStdDev = Math.sqrt(
-//         logRatios.reduce((sum, val) => sum + Math.pow(val - logMean, 2), 0) /
-//             logRatios.length
-//     );
-
-//     // Step 4: Percentile Calculation
-//     function getPercentile(data, percentile) {
-//         const index = Math.ceil(percentile * data.length) - 1;
-//         return data[index];
-//     }
-//     const percentile90 = getPercentile(data, 0.9);
-
-//     // Filter Data
-//     return {
-//         IQRFiltered: data.filter((x) => x <= upperBound),
-//         LogFiltered: data.filter((x) => Math.log(x) > logMean + 2 * logStdDev),
-//         PercentileFiltered: data.filter((x) => x > percentile90),
-//     };
-// }
-
-// // Contoh data turnover volume / circulating supply
-// const turnoverRatios = [0.01, 0.02, 0.03, 0.5, 0.7, 1.2, 10, 50, 100];
-// const filteredData = filterTurnoverRatios(turnoverRatios);
-
-// console.log("IQR Filtered:", filteredData.IQRFiltered);
-// console.log("Log Filtered:", filteredData.LogFiltered);
-// console.log("Percentile Filtered:", filteredData.PercentileFiltered);
-
-//TODO FETCH ALL DATA FIRST LOAD
-document.addEventListener("DOMContentLoaded", fetchAllData);
+    console.log("Initialization complete");
+});
