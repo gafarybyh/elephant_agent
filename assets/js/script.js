@@ -149,8 +149,8 @@ function calculateOutlier(data) {
     const Q1 = getQuartile(sortedData, 0.25);
     const Q3 = getQuartile(sortedData, 0.75);
     const IQR = Q3 - Q1;
-    const lowerBound = Q1 - 1.5 * IQR;
-    const upperBound = Q3 + 1.5 * IQR;
+    const lowerBound = Q1 - 1.2 * IQR;
+    const upperBound = Q3 + 1.2 * IQR;
 
     // Calculate percentile with bounds checking
     const percentile90Index = Math.min(Math.ceil(0.9 * sortedData.length) - 1, sortedData.length - 1);
